@@ -3,7 +3,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
 export const registerUser = async (data) => {
-  const { name, email, password } = data;
+  const { name, username, email, password } = data;
   const existUser = await prisma.user.findUnique({
     where: { email },
   });
@@ -12,11 +12,22 @@ export const registerUser = async (data) => {
     throw new Error("Email already exists");
   }
 
+  const existUsername = await prisma.user.findUnique({
+    where: { username },
+  });
+
+  if (existUsername) {
+    throw new Error("Username already taken");
+  }
+
   const hashedPassword = await bcrypt.hash(password, 10);
+  const avatar = `https://ui-avatars.com/api/?name=${name}&background=random`;
 
   const user = await prisma.user.create({
     data: {
       name,
+      username,
+      avatar,
       email,
       password: hashedPassword,
     },

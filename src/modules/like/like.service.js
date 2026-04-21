@@ -51,3 +51,17 @@ export const getLikeCount = async (postId) => {
 
   return count;
 };
+
+export const getLikeStatus = async (userId, postId) => {
+  const existing = await prisma.like.findUnique({
+    where: {
+      userId_postId: { userId: Number(userId), postId: Number(postId) },
+    },
+  });
+
+  const count = await prisma.like.count({
+    where: { postId: Number(postId) },
+  });
+
+  return { isLiked: !!existing, count };
+};

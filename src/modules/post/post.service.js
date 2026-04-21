@@ -1,10 +1,11 @@
 import prisma from "../../config/prisma.js";
+import { getIO } from "../../config/socket.js";
 
 export const getPost = async () => {
   const getPost = await prisma.post.findMany({
     include: {
       user: {
-        select: { id: true, name: true },
+        select: { id: true, name: true, username: true, avatar: true },
       },
       _count: {
         select: { comments: true, likes: true },
@@ -36,14 +37,29 @@ export const getPostById = async (id) => {
 export const createPost = async (userId, data) => {
   const { content } = data;
 
-  const createPost = await prisma.post.create({
+  const newPost = await prisma.post.create({
     data: {
       content,
       userId,
     },
+    include: {
+      user: {
+        select: { id: true, name: true, username: true, avatar: true },
+      },
+      _count: {
+        select: { comments: true, likes: true },
+      },
+    },
   });
 
-  return createPost;
+  try {
+    const io = getIO();
+    io.emit("newPost", newPost);
+  } catch (error) {
+    console.error("Realtime newPost emission failed:", error.message);
+  }
+
+  return newPost;
 };
 
 export const updatePost = async (userId, postId, data) => {

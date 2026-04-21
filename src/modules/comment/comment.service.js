@@ -10,7 +10,7 @@ export const createComment = async (userId, postId, data) => {
     },
     include: {
       user: {
-        select: { id: true, name: true },
+        select: { id: true, name: true, username: true, avatar: true },
       },
     },
   });
@@ -30,11 +30,11 @@ export const getComments = async (postId) => {
     where: { postId: Number(postId) },
     include: {
       user: {
-        select: { id: true, name: true },
+        select: { id: true, name: true, username: true, avatar: true },
       },
     },
     orderBy: {
-      createdAt: "desc",
+      createdAt: "asc",
     },
   });
 
