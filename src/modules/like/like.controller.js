@@ -1,4 +1,4 @@
-import { getLikeCount, toggleLike } from "./like.service.js";
+import { getLikeCount, toggleLike, getLikeStatus } from "./like.service.js";
 
 export const toggle = async (req, res) => {
   try {
@@ -22,6 +22,21 @@ export const countLike = async (req, res) => {
     res.json({
       success: true,
       data: count,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const getLikeStatusController = async (req, res) => {
+  try {
+    const result = await getLikeStatus(req.user.id, req.params.postId);
+    res.json({
+      success: true,
+      data: result,
     });
   } catch (error) {
     res.status(400).json({
