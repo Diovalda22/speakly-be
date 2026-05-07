@@ -1,5 +1,6 @@
 import prisma from "../../config/prisma.js";
 import { getIO } from "../../config/socket.js";
+import { createNotification } from "../notification/notification.service.js";
 
 export const toggleLike = async (userId, postId) => {
   const existing = await prisma.like.findUnique({
@@ -28,7 +29,7 @@ export const toggleLike = async (userId, postId) => {
 
   try {
     const io = getIO();
-    // 🔥 Emit realtime
+    // 🔥 Emit realtime like count update
     io.emit("likeUpdated", {
       postId,
       liked,
@@ -37,6 +38,33 @@ export const toggleLike = async (userId, postId) => {
     });
   } catch (error) {
     console.error("Realtime emission failed:", error.message);
+  }
+
+  // 🔔 Trigger notifikasi ke pemilik post (hanya saat like, bukan unlike)
+  if (liked) {
+    try {
+      const post = await prisma.post.findUnique({
+        where: { id: postId },
+        select: { userId: true },
+      });
+
+      if (post) {
+        const actor = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { name: true, username: true },
+        });
+
+        await createNotification({
+          userId: post.userId,
+          actorId: userId,
+          type: "like",
+          postId,
+          message: `${actor.name} (@${actor.username}) menyukai postinganmu`,
+        });
+      }
+    } catch (err) {
+      console.error("Failed to create like notification:", err.message);
+    }
   }
 
   return { liked, likeCount };
