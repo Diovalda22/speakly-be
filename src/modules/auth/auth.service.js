@@ -61,3 +61,80 @@ export const logoutUser = async (token) => {
 
   return true;
 };
+
+/**
+ * Cari user berdasarkan nama atau username (case-insensitive)
+ */
+export const searchUsers = async (query, currentUserId) => {
+  if (!query || query.trim().length < 1) return [];
+
+  const users = await prisma.user.findMany({
+    where: {
+      OR: [
+        { name: { contains: query, mode: "insensitive" } },
+        { username: { contains: query, mode: "insensitive" } },
+      ],
+      NOT: currentUserId ? { id: currentUserId } : undefined,
+    },
+    select: {
+      id: true,
+      name: true,
+      username: true,
+      avatar: true,
+      _count: {
+        select: {
+          followers: true,
+          following: true,
+          posts: true,
+        },
+      },
+    },
+    take: 20,
+    orderBy: { name: "asc" },
+  });
+
+  return users;
+};
+
+/**
+ * Ambil profil lengkap user berdasarkan ID
+ */
+export const getUserProfile = async (userId, currentUserId) => {
+  userId = Number(userId);
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      name: true,
+      username: true,
+      avatar: true,
+      createdAt: true,
+      _count: {
+        select: {
+          followers: true,
+          following: true,
+          posts: true,
+        },
+      },
+    },
+  });
+
+  if (!user) return null;
+
+  // Cek apakah currentUser sudah follow user ini
+  let isFollowing = false;
+  if (currentUserId && currentUserId !== userId) {
+    const follow = await prisma.follow.findUnique({
+      where: {
+        followerId_followingId: {
+          followerId: Number(currentUserId),
+          followingId: userId,
+        },
+      },
+    });
+    isFollowing = !!follow;
+  }
+
+  return { ...user, isFollowing };
+};

@@ -15,6 +15,14 @@ const io = new Server(httpServer, {
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
+  // User join room pribadi berdasarkan userId untuk notifikasi
+  socket.on("joinRoom", (userId) => {
+    if (userId) {
+      socket.join(`user:${userId}`);
+      console.log(`Socket ${socket.id} joined room user:${userId}`);
+    }
+  });
+
   socket.on("disconnect", () => {
     console.log("User disconnected:", socket.id);
   });
